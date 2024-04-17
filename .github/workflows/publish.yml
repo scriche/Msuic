@@ -1,0 +1,28 @@
+name: publish
+on:
+  push:
+    branches:
+      - main 
+jobs:
+  publish-Msuic-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Pull Base Image
+        run: docker pull python:3.9-slim
+      
+      - name: Build the Msuic Docker image
+        run: |
+          docker build . --tag ghcr.io/scriche/Msuic:latest
+          # Add error handling
+          set -e
+          docker push ghcr.io/scriche/Msuic:latest
