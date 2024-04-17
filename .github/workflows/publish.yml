@@ -8,14 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
-        with:
-              node-version: '20'
+        uses: actions/checkout@v4
       
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action
         with:
-          node-version: '20'
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
