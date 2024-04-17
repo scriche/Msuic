@@ -25,7 +25,7 @@ jobs:
       
       - name: Build the Msuic Docker image
         run: |
-          docker build . --tag ghcr.io/scriche/Msuic:latest
+          docker build . --tag ghcr.io/scriche/msuic:latest
           # Add error handling
           set -e
-          docker push ghcr.io/scriche/Msuic:latest
+          docker push ghcr.io/scriche/msuic:latest
