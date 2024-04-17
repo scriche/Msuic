@@ -24,4 +24,4 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: scriche/msuic:latest
+          tags: ghcr.io/scriche/msuic:latest
