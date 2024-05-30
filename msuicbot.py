@@ -171,7 +171,6 @@ async def skip(interaction: discord.Interaction):
     await asyncio.sleep(1)
     if not interaction.guild.voice_client.is_playing():
         await play_next(interaction.guild, interaction.guild.voice_client, interaction.channel)
-    await print_queue(interaction.channel)
     await interaction.response.send_message("Skipped the current song.", ephemeral=True)
 
 # Run the bot with your token
