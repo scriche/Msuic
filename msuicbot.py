@@ -51,12 +51,12 @@ async def on_ready():
 async def play(interaction: discord.Interaction, query: str):
 
     if interaction.user.voice is None or interaction.user.voice.channel is None:
-        await interaction.response.send_message("You are not in a voice channel.")
+        await interaction.response.send_message("You are not in a voice channel.", ephemeral=True)
         return
 
     # Check if a query is specified
     if not query:
-        await interaction.response.send_message("Please specify a YouTube link or a search query.")
+        await interaction.response.send_message("Please specify a YouTube link or a search query.", ephemeral=True)
         return
     
     await interaction.response.send_message(f"Searching for **{query}**...")
@@ -96,7 +96,7 @@ async def play(interaction: discord.Interaction, query: str):
         queues[interaction.guild.id] = []
 
     # Add song to the queue
-    await interaction.channel.send(f"Added **{video_title}** to the queue.")
+    await interaction.edit_original_response(content=(f"Added **{video_title}** to the queue."))
     queues[interaction.guild.id].append((audio_url, video_title))
 
     # Get the voice client for the guild
@@ -110,9 +110,6 @@ async def play(interaction: discord.Interaction, query: str):
     # If bot is not already playing, start playing
     if not voice_client.is_playing():
         await play_next(interaction.guild, voice_client, interaction.channel)
-
-    # Print the queue
-    await print_queue(interaction.channel)
 
 async def print_queue(ctx):
     if ctx.guild.id in queues and queues[ctx.guild.id]:
@@ -128,7 +125,6 @@ async def print_queue(ctx):
 async def play_next(guild, voice_client, channel):
     if queues.get(guild.id):
         if queues[guild.id]:
-            print("Playing song", queues[guild.id][0][1])
             url, title = queues[guild.id][0]
             ffmpeg_options = {
                 'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -145,9 +141,6 @@ async def play_next(guild, voice_client, channel):
                         asyncio.run_coroutine_threadsafe(play_next(guild, voice_client, channel), bot.loop)
                     
             voice_client.play(discord.FFmpegPCMAudio(url, **ffmpeg_options), after=after_playing)
-            
-            # Send message to the channel with music in its name
-            await channel.send(f"Now playing: **{title}**")
         else:
             print("Queue is empty")
     else:
@@ -157,10 +150,10 @@ async def play_next(guild, voice_client, channel):
 @bot.tree.command(name="stop", description="Clear the queue and leave the voice channel")
 async def stop(interaction: discord.Interaction):
     if interaction.guild.voice_client is None:
-        await interaction.response.send_message("I'm not in a voice channel.")
+        await interaction.response.send_message("I'm not in a voice channel.", ephemeral=True)
         return
 
-    await interaction.response.send_message("Stopped playing and cleared the queue.")
+    await interaction.response.send_message("Stopped playing and cleared the queue.", ephemeral=True)
     interaction.guild.voice_client.stop()
     queues[interaction.guild.id] = []
     await interaction.guild.voice_client.disconnect()
@@ -170,7 +163,7 @@ async def stop(interaction: discord.Interaction):
 @bot.tree.command(name="skip", description="Skip the current song")
 async def skip(interaction: discord.Interaction):
     if interaction.guild.voice_client is None or not interaction.guild.voice_client.is_playing():
-        await interaction.response.send_message("I am not currently playing anything.")
+        await interaction.response.send_message("I am not currently playing anything.", ephemeral=True)
         return
 
     # clear the current song from the queue and play the next one
@@ -179,7 +172,7 @@ async def skip(interaction: discord.Interaction):
     if not interaction.guild.voice_client.is_playing():
         await play_next(interaction.guild, interaction.guild.voice_client, interaction.channel)
     await print_queue(interaction.channel)
-    await interaction.response.send_message("Skipped the current song.")
+    await interaction.response.send_message("Skipped the current song.", ephemeral=True)
 
 # Run the bot with your token
 bot.run(os.environ['DISCORD_TOKEN'])
