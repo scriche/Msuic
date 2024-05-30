@@ -16,24 +16,20 @@ intents.guild_messages = True  # Enable the guild messages intent
 bot = commands.Bot(command_prefix='!', intents=intents)
 voice_clients = {}
 queues = {}
-disconnected_guilds = set()
 bot_sent_messages = {}
 
 @tasks.loop(minutes=5)  # Check every minute
 async def check_voice_channels():
-    global disconnected_guilds  # Ensure we modify the global set
+    # check each voice channel the bot is connected to and disconnect the bot if it's alone using the stop function
     for guild in bot.guilds:
-        if guild in disconnected_guilds:
-            continue  # Skip guilds that have already been disconnected from
-        for voice_channel in guild.voice_channels:
-            if len(voice_channel.members) == 0:
-                voice_client = discord.utils.get(bot.voice_clients, guild=guild)
-                if voice_client and voice_client.channel == voice_channel:
-                    try:
-                        await voice_client.disconnect()
-                        disconnected_guilds.add(guild)  # Add guild to disconnected set
-                    except Exception as e:
-                        print(f"Error disconnecting from {guild}: {e}")
+        for channel in guild.voice_channels:
+            # check if the bot is connected to the channel
+            if channel.guild.voice_client is not None:
+                # check if the bot is the only one in the channel
+                if len(channel.members) == 1:
+                    # stop the bot aWnd clear the queue
+                    await channel.guild.voice_client.disconnect()
+                    queues[channel.guild.id] = []
 
 # Event: Bot is ready
 @bot.event
@@ -120,7 +116,6 @@ async def print_queue(ctx):
     else:
         await ctx.send("The queue is empty.")
 
-# Play the next song in the queue
 # Play the next song in the queue
 async def play_next(guild, voice_client, channel):
     if queues.get(guild.id):
