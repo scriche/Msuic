@@ -93,7 +93,7 @@ async def play(interaction: discord.Interaction, query: str):
 
     # Get url of youtube video thumbnail image
     video_id = url.split('=')[-1]
-    thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+    thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
     embed=discord.Embed(title="Added to queue", description=f"**[{video_title}]({url})**", color=10038562)
     embed.set_thumbnail(url=thumbnail_url)
     await interaction.edit_original_response(embed=embed, content="")
