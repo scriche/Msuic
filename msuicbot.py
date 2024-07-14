@@ -63,7 +63,7 @@ async def play(interaction: discord.Interaction, query: str):
         if '&list=' in url:
             url = url[:url.index('&list=')]
     else:
-        # Search for the query on YouTube and filter out videos longer than 1 hour 30 minutes
+        # Search for the query on YouTube
         videosSearch = VideosSearch(query, limit=1)
         result = videosSearch.result()['result']
         if result:
@@ -94,10 +94,10 @@ async def play(interaction: discord.Interaction, query: str):
     # Get url of youtube video thumbnail image
     video_id = url.split('=')[-1]
     thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
-    embed=discord.Embed(title="Added to queue", description=f"**[{video_title}]({url})**", color=discord.Color)
+    embed=discord.Embed(title="Added to queue", description=f"**[{video_title}]({url})**", color=10038562)
     embed.set_thumbnail(url=thumbnail_url)
+    await interaction.edit_original_response(embed=embed, content="")
     # Add song to the queue and send a response as imbed with a thumbnail
-    await interaction.edit_original_response()
     queues[interaction.guild.id].append((audio_url, video_title))
 
     # Get the voice client for the guild
