@@ -91,8 +91,11 @@ async def play(interaction: discord.Interaction, query: str):
     if interaction.guild.id not in queues:
         queues[interaction.guild.id] = []
 
-    # Get url of youtube video thumbnail image
-    video_id = url.split('=')[-1]
+    # Get url of youtube video thumbnail image depending on the on youtube.com or youtu.be
+    if 'youtu.be' in url:
+        video_id = url.split('/')[-1].split('?')[0]
+    else:
+        video_id = url.split('=')[-1]
     thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
     embed=discord.Embed(title="Added to queue", description=f"**[{video_title}]({url})**", color=10038562)
     embed.set_thumbnail(url=thumbnail_url)
@@ -140,7 +143,7 @@ async def play_next(guild, voice_client, channel):
                         queues[guild.id].pop(0)  # Remove the top item from the queue
                         asyncio.run_coroutine_threadsafe(play_next(guild, voice_client, channel), bot.loop)
                     
-            voice_client.play(discord.FFmpegPCMAudio(url, **ffmpeg_options), after=after_playing)
+            voice_client.play(discord.FFmpegOpusAudio(url, **ffmpeg_options), after=after_playing)
         else:
             print("Queue is empty")
     else:
