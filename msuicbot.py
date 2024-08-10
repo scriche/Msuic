@@ -142,8 +142,10 @@ async def play_next(guild, voice_client, channel):
                     if queues[guild.id]:
                         queues[guild.id].pop(0)  # Remove the top item from the queue
                         asyncio.run_coroutine_threadsafe(play_next(guild, voice_client, channel), bot.loop)
-                    
-            voice_client.play(discord.FFmpegOpusAudio(url, **ffmpeg_options), after=after_playing)
+            # wait for a small buffer before playing the next song
+            source = discord.FFmpegOpusAudio(url, **ffmpeg_options)
+            await asyncio.sleep(1)
+            voice_client.play(source, after=after_playing)
         else:
             print("Queue is empty")
     else:
