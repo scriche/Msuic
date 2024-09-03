@@ -5,6 +5,7 @@ import yt_dlp as youtube_dl
 from youtubesearchpython import VideosSearch
 import nacl
 import os
+import logging
 
 # Define intents
 intents = discord.Intents.default()
@@ -17,6 +18,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 voice_clients = {}
 queues = {}
 bot_sent_messages = {}
+
+logging.getLogger('discord.gateway').setLevel(logging.ERROR)
 
 @tasks.loop(minutes=5)  # Check every minute
 async def check_voice_channels():
@@ -48,6 +51,11 @@ async def play(interaction: discord.Interaction, query: str):
 
     if interaction.user.voice is None or interaction.user.voice.channel is None:
         await interaction.response.send_message("You are not in a voice channel.", ephemeral=True)
+        return
+    
+    # Check if has permission for channel
+    if not interaction.user.voice.channel.permissions_for(interaction.guild.me).connect:
+        await interaction.response.send_message("I don't have permission to join the voice channel.", ephemeral=True)
         return
 
     # Check if a query is specified
