@@ -22,7 +22,7 @@ bot_sent_messages = {}
 logging.getLogger('discord.gateway').setLevel(logging.ERROR)
 logging.getLogger('discord.voice_state').setLevel(logging.ERROR)
 logging.getLogger('discord.client').setLevel(logging.ERROR)
-youtube_dl.utils.bug_reports_message = lambda: ''
+logging.getLogger('youtube_dl').setLevel(logging.ERROR)
 
 @tasks.loop(minutes=5)  # Check every minute
 async def check_voice_channels():
@@ -185,9 +185,6 @@ async def skip(interaction: discord.Interaction):
 
     # clear the current song from the queue and play the next one
     interaction.guild.voice_client.stop()
-    await asyncio.sleep(1)
-    if not interaction.guild.voice_client.is_playing():
-        await play_next(interaction.guild, interaction.guild.voice_client, interaction.channel)
     await interaction.response.send_message("Skipped the current song.", ephemeral=True)
 
 # Run the bot with your token
