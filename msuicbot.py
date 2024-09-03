@@ -20,6 +20,9 @@ queues = {}
 bot_sent_messages = {}
 
 logging.getLogger('discord.gateway').setLevel(logging.ERROR)
+logging.getLogger('discord.voice_state').setLevel(logging.ERROR)
+logging.getLogger('discord.client').setLevel(logging.ERROR)
+youtube_dl.utils.bug_reports_message = lambda: ''
 
 @tasks.loop(minutes=5)  # Check every minute
 async def check_voice_channels():
@@ -154,6 +157,7 @@ async def play_next(guild, voice_client, channel):
             source = discord.FFmpegOpusAudio(url, **ffmpeg_options)
             await asyncio.sleep(1)
             voice_client.play(source, after=after_playing)
+            print(f"Playing: {title} in {guild.name}")
         else:
             print("Queue is empty")
     else:
