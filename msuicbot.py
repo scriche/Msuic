@@ -23,7 +23,7 @@ logging.getLogger('discord.gateway').setLevel(logging.ERROR)
 logging.getLogger('discord.voice_state').setLevel(logging.ERROR)
 logging.getLogger('discord.client').setLevel(logging.ERROR)
 logging.getLogger('discord.player').setLevel(logging.ERROR)
-logging.getLogger('discord.voice_client').setLevel(logging.ERROR)
+logging.getLogger('discord.voice_client').setLevel(logging.CRITICAL)
 
 # Define youtube-dl options
 ytdl_opts = {
