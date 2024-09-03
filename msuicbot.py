@@ -22,7 +22,15 @@ bot_sent_messages = {}
 logging.getLogger('discord.gateway').setLevel(logging.ERROR)
 logging.getLogger('discord.voice_state').setLevel(logging.ERROR)
 logging.getLogger('discord.client').setLevel(logging.ERROR)
-logging.getLogger('youtube_dl').setLevel(logging.ERROR)
+logging.getLogger('discord.player').setLevel(logging.ERROR)
+logging.getLogger('discord.voice_client').setLevel(logging.ERROR)
+
+# Define youtube-dl options
+ytdl_opts = {
+    'format': 'bestaudio/best',
+    'quiet': True,
+    'no_warnings': True
+}
 
 @tasks.loop(minutes=5)  # Check every minute
 async def check_voice_channels():
@@ -84,7 +92,7 @@ async def play(interaction: discord.Interaction, query: str):
             return
 
     # Extract video title
-    ytdl = youtube_dl.YoutubeDL({'format': 'bestaudio'})
+    ytdl = youtube_dl.YoutubeDL(ytdl_opts)
 
     try:
         with ytdl:
