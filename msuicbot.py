@@ -21,7 +21,7 @@ bot_sent_messages = {}
 
 logging.getLogger('discord.gateway').setLevel(logging.ERROR)
 logging.getLogger('discord.voice_state').setLevel(logging.ERROR)
-logging.getLogger('discord.client').setLevel(logging.ERROR)
+logging.getLogger('discord.client').setLevel(logging.CRITICAL)
 logging.getLogger('discord.player').setLevel(logging.ERROR)
 logging.getLogger('discord.voice_client').setLevel(logging.CRITICAL)
 
