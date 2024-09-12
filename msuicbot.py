@@ -33,6 +33,8 @@ ytdl_opts = {
     'extract_flat': True
 }
 
+ytdl = youtube_dl.YoutubeDL(ytdl_opts)
+
 @tasks.loop(minutes=5)  # Check every minute
 async def check_voice_channels():
     # check each voice channel the bot is connected to and disconnect the bot if it's alone using the stop function
@@ -98,9 +100,6 @@ async def play(interaction: discord.Interaction, query: str):
     if interaction.guild.id not in queues:
         queues[interaction.guild.id] = []
 
-    # Extract video title
-    ytdl = youtube_dl.YoutubeDL(ytdl_opts)
-
     try:
         with ytdl:
             info = ytdl.extract_info(url, download=False)
@@ -108,14 +107,13 @@ async def play(interaction: discord.Interaction, query: str):
             if 'entries' in info:
                 for entry in info['entries']:
                     video_title = entry['title']
-                    # get audio url from normal url
-                    audio_url = ytdl.extract_info(entry['url'], download=False)['url']
+                    audio_url = entry['url']
                     # Add each song to the queue
                     queues[interaction.guild.id].append((audio_url, video_title))
                     print(f"Added to queue: {video_title}")
             else:
                 video_title = info['title']
-                audio_url = info['url']
+                audio_url = url
                 # Add song to the queue
                 queues[interaction.guild.id].append((audio_url, video_title))
                 print(f"Added to queue: {video_title}")
@@ -129,15 +127,19 @@ async def play(interaction: discord.Interaction, query: str):
         video_id = url.split('/')[-1].split('?')[0]
     else:
         video_id = url.split('=')[-1]
-    # if playlist set image to first video in playlist
+    # if playlist set image to first video in playlist 
     if 'playlist' in url:
         thumbnail_url = f"https://i.ytimg.com/vi/{info['entries'][0]['id']}/mqdefault.jpg"
         description = f"**[{info['title']}]({url})**"
+        fields = [{"name": "Songs", "value": len(info['entries']), "inline": True}]
     else:
         thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
         description = f"**[{video_title}]({url})**"
     embed=discord.Embed(title="Added to queue", description=description, color=10038562)
     embed.set_thumbnail(url=thumbnail_url)
+    if 'playlist' in url:
+        for field in fields:
+            embed.add_field(name=field['name'], value=field['value'], inline=False)
     await interaction.edit_original_response(embed=embed, content="")
     # Add song to the queue and send a response as imbed with a thumbnail
     # queues[interaction.guild.id].append((audio_url, video_title))
@@ -182,8 +184,7 @@ async def play_next(guild, voice_client, channel):
                         queues[guild.id].pop(0)  # Remove the top item from the queue
                         asyncio.run_coroutine_threadsafe(play_next(guild, voice_client, channel), bot.loop)
             # wait for a small buffer before playing the next song
-            source = discord.FFmpegOpusAudio(url, **ffmpeg_options)
-            await asyncio.sleep(1)
+            source = discord.FFmpegOpusAudio(ytdl.extract_info(url,download=False)['url'], **ffmpeg_options)
             voice_client.play(source, after=after_playing)
             print(f"Playing: {title} in {guild.name}")
         else:
