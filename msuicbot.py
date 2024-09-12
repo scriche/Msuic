@@ -29,7 +29,8 @@ logging.getLogger('discord.voice_client').setLevel(logging.CRITICAL)
 ytdl_opts = {
     'format': 'bestaudio/best',
     'quiet': True,
-    'no_warnings': True
+    'no_warnings': True,
+    'extract_flat': True
 }
 
 @tasks.loop(minutes=5)  # Check every minute
@@ -79,7 +80,9 @@ async def play(interaction: discord.Interaction, query: str):
     # Check if the query is a YouTube URL
     if query.startswith('https://www.youtube.com/') or query.startswith('https://youtu.be/'):
         url = query
-        if '&list=' in url:
+        if 'playlist' in url:
+            url = url
+        elif '&list=' in url:
             url = url[:url.index('&list=')]
     else:
         # Search for the query on YouTube
@@ -90,6 +93,10 @@ async def play(interaction: discord.Interaction, query: str):
         else:
             await interaction.edit_original_response(content="No search results found.")
             return
+        
+    # Create queue for the guild if it doesn't exist
+    if interaction.guild.id not in queues:
+        queues[interaction.guild.id] = []
 
     # Extract video title
     ytdl = youtube_dl.YoutubeDL(ytdl_opts)
@@ -97,30 +104,43 @@ async def play(interaction: discord.Interaction, query: str):
     try:
         with ytdl:
             info = ytdl.extract_info(url, download=False)
+            # if playlist = True, add all songs in the playlist to the queue
             if 'entries' in info:
-                info = info['entries'][0]
-            video_title = info['title']
-            audio_url = info['url']
+                for entry in info['entries']:
+                    video_title = entry['title']
+                    # get audio url from normal url
+                    audio_url = ytdl.extract_info(entry['url'], download=False)['url']
+                    # Add each song to the queue
+                    queues[interaction.guild.id].append((audio_url, video_title))
+                    print(f"Added to queue: {video_title}")
+            else:
+                video_title = info['title']
+                audio_url = info['url']
+                # Add song to the queue
+                queues[interaction.guild.id].append((audio_url, video_title))
+                print(f"Added to queue: {video_title}")
     except Exception as e:
         print(e)
         await interaction.edit_original_response(content="An error occurred while processing the YouTube link.")
         return
-
-    # Create queue for the guild if it doesn't exist
-    if interaction.guild.id not in queues:
-        queues[interaction.guild.id] = []
 
     # Get url of youtube video thumbnail image depending on the on youtube.com or youtu.be
     if 'youtu.be' in url:
         video_id = url.split('/')[-1].split('?')[0]
     else:
         video_id = url.split('=')[-1]
-    thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
-    embed=discord.Embed(title="Added to queue", description=f"**[{video_title}]({url})**", color=10038562)
+    # if playlist set image to first video in playlist
+    if 'playlist' in url:
+        thumbnail_url = f"https://i.ytimg.com/vi/{info['entries'][0]['id']}/mqdefault.jpg"
+        description = f"**[{info['title']}]({url})**"
+    else:
+        thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
+        description = f"**[{video_title}]({url})**"
+    embed=discord.Embed(title="Added to queue", description=description, color=10038562)
     embed.set_thumbnail(url=thumbnail_url)
     await interaction.edit_original_response(embed=embed, content="")
     # Add song to the queue and send a response as imbed with a thumbnail
-    queues[interaction.guild.id].append((audio_url, video_title))
+    # queues[interaction.guild.id].append((audio_url, video_title))
 
     # Get the voice client for the guild
     voice_client = interaction.guild.voice_client
