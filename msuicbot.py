@@ -30,7 +30,8 @@ ytdl_opts = {
     'format': 'bestaudio/best',
     'quiet': True,
     'no_warnings': True,
-    'extract_flat': True
+    'extract_flat': True,
+    'cachedir': False,
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_opts)
@@ -171,10 +172,14 @@ async def play_next(guild, voice_client, channel):
         if queues[guild.id]:
             url, title = queues[guild.id][0]
             ffmpeg_options = {
-                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-                'options': '-vn'
+                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss 00:00:00',
+                'options': '-vn -bufsize 64k',
             }
-            
+
+            # Cache the URL during the first extraction
+            stream_info = ytdl.extract_info(url, download=False)
+            audio_url = stream_info['url']
+
             # Define a callback function to handle queue popping after the song finishes playing
             def after_playing(error):
                 if error:
@@ -184,7 +189,7 @@ async def play_next(guild, voice_client, channel):
                         queues[guild.id].pop(0)  # Remove the top item from the queue
                         asyncio.run_coroutine_threadsafe(play_next(guild, voice_client, channel), bot.loop)
             # wait for a small buffer before playing the next song
-            source = discord.FFmpegOpusAudio(ytdl.extract_info(url,download=False)['url'], **ffmpeg_options)
+            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options)
             voice_client.play(source, after=after_playing)
             print(f"Playing: {title} in {guild.name}")
         else:
