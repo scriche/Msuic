@@ -36,25 +36,11 @@ ytdl_opts = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_opts)
 
-@tasks.loop(minutes=5)  # Check every minute
-async def check_voice_channels():
-    # check each voice channel the bot is connected to and disconnect the bot if it's alone using the stop function
-    for guild in bot.guilds:
-        for channel in guild.voice_channels:
-            # check if the bot is connected to the channel
-            if channel.guild.voice_client is not None:
-                # check if the bot is the only one in the channel
-                if len(channel.members) == 1:
-                    # stop the bot aWnd clear the queue
-                    await channel.guild.voice_client.disconnect()
-                    queues[channel.guild.id] = []
-
 # Event: Bot is ready
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     await bot.change_presence(activity=discord.Game(name="/play to queue a song"))
-    check_voice_channels.start()  
     try:
         synced = await bot.tree.sync()
     except Exception as e:
@@ -220,6 +206,20 @@ async def skip(interaction: discord.Interaction):
     # clear the current song from the queue and play the next one
     interaction.guild.voice_client.stop()
     await interaction.response.send_message("Skipped the current song.", ephemeral=True)
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    # Check if the bot is connected to a voice channel
+    if member.bot:
+        return
+
+    voice_client = member.guild.voice_client
+    if voice_client is not None:
+        # Check if the bot is the only one in the channel
+        if len(voice_client.channel.members) == 1:
+            # Disconnect the bot and clear the queue
+            await voice_client.disconnect()
+            queues[member.guild.id] = []
 
 # Run the bot with your token
 bot.run(os.environ['DISCORD_TOKEN'])
