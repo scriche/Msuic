@@ -6,6 +6,7 @@ from youtubesearchpython import VideosSearch
 import nacl
 import os
 import logging
+import random
 
 # Define intents
 intents = discord.Intents.default()
@@ -40,7 +41,7 @@ ytdl = youtube_dl.YoutubeDL(ytdl_opts)
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
-    await bot.change_presence(activity=discord.Game(name="/play to queue a song"))
+    await bot.change_presence(activity=discord.Game(name="Music | /play <query>"))
     try:
         synced = await bot.tree.sync()
     except Exception as e:
@@ -100,7 +101,7 @@ async def play(interaction: discord.Interaction, query: str):
                     print(f"Added to queue: {video_title}")
             else:
                 video_title = info['title']
-                audio_url = url
+                audio_url = info['url']
                 # Add song to the queue
                 queues[interaction.guild.id].append((audio_url, video_title))
                 print(f"Added to queue: {video_title}")
@@ -156,15 +157,11 @@ async def print_queue(ctx):
 async def play_next(guild, voice_client, channel):
     if queues.get(guild.id):
         if queues[guild.id]:
-            url, title = queues[guild.id][0]
+            audio_url, title = queues[guild.id][0]
             ffmpeg_options = {
-                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss 00:00:00',
-                'options': '-vn -bufsize 64k',
+                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                'options': '-vn -b:a 96k -f opus',
             }
-
-            # Cache the URL during the first extraction
-            stream_info = ytdl.extract_info(url, download=False)
-            audio_url = stream_info['url']
 
             # Define a callback function to handle queue popping after the song finishes playing
             def after_playing(error):
@@ -180,8 +177,6 @@ async def play_next(guild, voice_client, channel):
             print(f"Playing: {title} in {guild.name}")
         else:
             print("Queue is empty")
-    else:
-        print("Queue not found for guild")
 
 # Command: Stop playing and clear the queue
 @bot.tree.command(name="stop", description="Clear the queue and leave the voice channel")
@@ -207,6 +202,39 @@ async def skip(interaction: discord.Interaction):
     interaction.guild.voice_client.stop()
     await interaction.response.send_message("Skipped the current song.", ephemeral=True)
 
+# Command: Skip the current song
+@bot.tree.command(name="gaming", description="Its gaming time")
+async def skip(interaction: discord.Interaction):
+    # randomly pick a video from a specified playlist
+    playlist_url = "https://www.youtube.com/playlist?list=PL_VhV5m_X3BK-j1rqyOG5j7FraqSEIxVw"
+    if interaction.user.voice is None or interaction.user.voice.channel is None:
+        await interaction.response.send_message("You are not in a voice channel.", ephemeral=True)
+        return
+    if not interaction.user.voice.channel.permissions_for(interaction.guild.me).connect:
+        await interaction.response.send_message("I don't have permission to join the voice channel.", ephemeral=True)
+        return
+    await interaction.response.send_message(f"**Its Gaming Time**...")
+    if interaction.guild.id not in queues:
+        queues[interaction.guild.id] = []
+    with ytdl:
+        info = ytdl.extract_info(playlist_url, download=False)
+        video = info['entries'][random.randint(0, len(info['entries'])-1)]
+        video = ytdl.extract_info(video['url'], download=False)
+        url = video['url']
+        title = video['title']
+        queues[interaction.guild.id].append((url, title))
+        description = f"**[{title}]({url})**"
+        embed=discord.Embed(title="Added to queue", description=description, color=10038562)
+        embed.set_thumbnail(url=video['thumbnails'][0]['url'])
+        await interaction.edit_original_response(embed=embed, content="")
+        voice_client = interaction.guild.voice_client
+        if voice_client is None:
+            voice_client = await interaction.user.voice.channel.connect()
+            await voice_client.guild.change_voice_state(channel=voice_client.channel, self_deaf=True)
+        if not voice_client.is_playing():
+            await play_next(interaction.guild, voice_client, interaction.channel)
+            
+
 @bot.event
 async def on_voice_state_update(member, before, after):
     # Check if the bot is connected to a voice channel
@@ -218,6 +246,7 @@ async def on_voice_state_update(member, before, after):
         # Check if the bot is the only one in the channel
         if len(voice_client.channel.members) == 1:
             # Disconnect the bot and clear the queue
+            print(f"Disconnecting from {voice_client.channel.name} in {member.guild.name}")
             await voice_client.disconnect()
             queues[member.guild.id] = []
 
