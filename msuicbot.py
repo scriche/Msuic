@@ -50,7 +50,10 @@ async def on_ready():
 # Command: Play a YouTube video
 @bot.tree.command(name="play", description="Play a YouTube video")
 async def play(interaction: discord.Interaction, query: str):
+    msg = f"Searching for **{query}**..."
+    await queue_song(interaction, query, msg)
 
+async def queue_song(interaction, query, msg):
     if interaction.user.voice is None or interaction.user.voice.channel is None:
         await interaction.response.send_message("You are not in a voice channel.", ephemeral=True)
         return
@@ -65,7 +68,7 @@ async def play(interaction: discord.Interaction, query: str):
         await interaction.response.send_message("Please specify a YouTube link or a search query.", ephemeral=True)
         return
     
-    await interaction.response.send_message(f"Searching for **{query}**...")
+    await interaction.response.send_message(msg)
 
     # Check if the query is a YouTube URL
     if query.startswith('https://www.youtube.com/') or query.startswith('https://youtu.be/'):
@@ -144,15 +147,6 @@ async def play(interaction: discord.Interaction, query: str):
     if not voice_client.is_playing():
         await play_next(interaction.guild, voice_client, interaction.channel)
 
-async def print_queue(ctx):
-    if ctx.guild.id in queues and queues[ctx.guild.id]:
-        embed = discord.Embed(title="Queue", color=discord.Color.blurple())
-        queue_list = "\n".join([f"{index}. {title}" for index, (_, title) in enumerate(queues[ctx.guild.id], start=1)])
-        embed.description = queue_list
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("The queue is empty.")
-
 # Play the next song in the queue
 async def play_next(guild, voice_client, channel):
     if queues.get(guild.id):
@@ -204,35 +198,16 @@ async def skip(interaction: discord.Interaction):
 
 # Command: Skip the current song
 @bot.tree.command(name="gaming", description="Its gaming time")
-async def skip(interaction: discord.Interaction):
+async def gaming(interaction: discord.Interaction):
     # randomly pick a video from a specified playlist
     playlist_url = "https://www.youtube.com/playlist?list=PL_VhV5m_X3BK-j1rqyOG5j7FraqSEIxVw"
-    if interaction.user.voice is None or interaction.user.voice.channel is None:
-        await interaction.response.send_message("You are not in a voice channel.", ephemeral=True)
-        return
-    if not interaction.user.voice.channel.permissions_for(interaction.guild.me).connect:
-        await interaction.response.send_message("I don't have permission to join the voice channel.", ephemeral=True)
-        return
-    await interaction.response.send_message(f"**Its Gaming Time**...")
-    if interaction.guild.id not in queues:
-        queues[interaction.guild.id] = []
+    msg = (f"**Its Gaming Time**...")
     with ytdl:
         info = ytdl.extract_info(playlist_url, download=False)
-        video = info['entries'][random.randint(0, len(info['entries'])-1)]
-        video = ytdl.extract_info(video['url'], download=False)
-        url = video['url']
-        title = video['title']
-        queues[interaction.guild.id].append((url, title))
-        description = f"**[{title}]({url})**"
-        embed=discord.Embed(title="Added to queue", description=description, color=10038562)
-        embed.set_thumbnail(url=video['thumbnails'][0]['url'])
-        await interaction.edit_original_response(embed=embed, content="")
-        voice_client = interaction.guild.voice_client
-        if voice_client is None:
-            voice_client = await interaction.user.voice.channel.connect()
-            await voice_client.guild.change_voice_state(channel=voice_client.channel, self_deaf=True)
-        if not voice_client.is_playing():
-            await play_next(interaction.guild, voice_client, interaction.channel)
+        if 'entries' in info:
+            entry = random.choice(info['entries'])
+            url = entry['url']
+    await queue_song(interaction, url, msg)
             
 
 @bot.event
