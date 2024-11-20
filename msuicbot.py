@@ -97,8 +97,14 @@ async def queue_song(interaction, query, msg):
             # if playlist = True, add all songs in the playlist to the queue
             if 'entries' in info:
                 for entry in info['entries']:
+                    # print the number of songs out of the total songs in the playlist
+                    await interaction.edit_original_response(content=f"Adding songs to the queue... " + str(info['entries'].index(entry)+1) + " / " + str(len(info['entries'])))
                     video_title = entry['title']
-                    audio_url = entry['url']
+                    try:
+                        audio_url = ytdl.extract_info(entry['url'], download=False)['url']
+                    except Exception as e:
+                        print(e)
+                        continue
                     # Add each song to the queue
                     queues[interaction.guild.id].append((audio_url, video_title))
                     print(f"Added to queue: {video_title}")
