@@ -145,7 +145,7 @@ async def play_next(guild, voice_client, channel):
     def after_playing(error):
         if error:
             print(f"Error during playback: {error}")
-        if queues[guild.id].__len__() > 1:
+        if queues[guild.id].__len__() >= 1:
             queues[guild.id].pop(0)
         asyncio.run_coroutine_threadsafe(play_next(guild, voice_client, channel), bot.loop)
 
