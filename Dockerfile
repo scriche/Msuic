@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir discord asyncio yt-dlp youtube-search-python pynacl
+RUN pip install --no-cache-dir discord asyncio yt-dlp pynacl
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y ffmpeg

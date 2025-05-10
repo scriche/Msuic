@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import asyncio
 import yt_dlp as youtube_dl
-from youtubesearchpython import VideosSearch
 import nacl
 import os
 import logging
@@ -68,10 +67,9 @@ async def queue_song(interaction, query, msg):
             url = url.split('&list=')[0]
     else:
         try:
-            videos_search = VideosSearch(query, limit=1)
-            result = videos_search.result().get('result', [])
-            if result:
-                url = result[0]['link']
+            search_results = ytdl.extract_info(f"ytsearch:{query}", download=False)
+            if 'entries' in search_results and search_results['entries']:
+                url = search_results['entries'][0]['url']
             else:
                 await interaction.edit_original_response(content="No search results found.")
                 return
