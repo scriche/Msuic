@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.14-slim
+FROM python:3.13.5-slim
 
 # Upgrade system packages to address vulnerabilities
 RUN apt-get update && apt-get upgrade -y && apt-get clean
