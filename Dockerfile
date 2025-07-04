@@ -1,5 +1,8 @@
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.14-slim
+
+# Upgrade system packages to address vulnerabilities
+RUN apt-get update && apt-get upgrade -y && apt-get clean
 
 # Set the working directory in the container
 WORKDIR /app
