@@ -204,7 +204,7 @@ async def on_voice_state_update(member, before, after):
         queues.pop(member.guild.id, None)
 
 @bot.event
-def on_error(event_method, *args, **kwargs):
+async def on_error(event_method, *args, **kwargs):
     import traceback
     print(f"Error in {event_method}:")
     traceback.print_exc()
@@ -225,7 +225,7 @@ def reconnect_task():
     return _reconnect
 
 @bot.event
-def on_disconnect():
+async def on_disconnect():
     asyncio.create_task(reconnect_task()())
 
 bot.run(os.getenv("DISCORD_TOKEN"))
