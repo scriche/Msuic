@@ -203,4 +203,29 @@ async def on_voice_state_update(member, before, after):
         await voice_client.disconnect()
         queues.pop(member.guild.id, None)
 
+@bot.event
+def on_error(event_method, *args, **kwargs):
+    import traceback
+    print(f"Error in {event_method}:")
+    traceback.print_exc()
+
+# Attempt to reconnect if disconnected
+def reconnect_task():
+    async def _reconnect():
+        print("Bot disconnected from Discord. Attempting to reconnect...")
+        while not bot.is_closed():
+            try:
+                await bot.login(os.getenv("DISCORD_TOKEN"))
+                await bot.connect(reconnect=True)
+                print("Reconnected!")
+                break
+            except Exception as e:
+                print(f"Reconnect failed: {e}. Retrying in 10 seconds...")
+                await asyncio.sleep(10)
+    return _reconnect
+
+@bot.event
+def on_disconnect():
+    asyncio.create_task(reconnect_task()())
+
 bot.run(os.getenv("DISCORD_TOKEN"))
