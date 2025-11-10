@@ -1,4 +1,4 @@
-# Msuic
+# Msuic (Depreciated for MsuicJS)
 
 This is a super simple music bot for discord that runs in a docker container
 
